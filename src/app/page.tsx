@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button'
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -7,10 +8,16 @@ export default function Home() {
       <p className="mb-8 text-lg text-muted-foreground">
         Process management for recurring workflows.
       </p>
+
       <div className="flex gap-4">
-        <Button>Get Started</Button>
-        <Button variant="outline">View Demo</Button>
+        <Button asChild>
+          <Link href="/register">Get Started</Link>
+        </Button>
+
+        <Button asChild variant="outline">
+          <Link href="/login">View Demo</Link>
+        </Button>
       </div>
     </div>
-  )
+  );
 }
