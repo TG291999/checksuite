@@ -3,9 +3,10 @@ import { redirect } from 'next/navigation'
 import { CreateBoardDialog } from './create-board-dialog'
 import { DeleteBoardButton } from './delete-board-button'
 import { TemplatePicker } from '@/components/templates/template-picker'
+import { TaskList } from '@/components/dashboard/task-list'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { ArrowRight, Layout } from 'lucide-react'
+import { ArrowRight, Layout, Clock, FileText } from 'lucide-react'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -24,7 +25,6 @@ export default async function DashboardPage() {
     const workspaceIds = memberWorkspaces?.map(mw => mw.workspace_id) || []
 
     // 2. Fetch Boards in those workspaces
-    // We also fetch workspace name to display correctly
     const { data: boards } = await supabase
         .from('boards')
         .select(`
@@ -46,6 +46,42 @@ export default async function DashboardPage() {
         .order('name')
 
     const hasBoards = boards && boards.length > 0
+
+    // 4. Fetch Open Tasks (assigned to user, not in 'Done' column)
+    const { data: rawTasks } = await supabase
+        .from('cards')
+        .select(`
+            id,
+            title,
+            due_date,
+            columns (
+                name,
+                boards (
+                    id,
+                    name
+                )
+            )
+        `)
+        .eq('assigned_to', user.id)
+        .order('due_date', { ascending: true })
+
+    // Transform and filter tasks
+    const allTasks = (rawTasks || []).map((card: any) => ({
+        id: card.id,
+        title: card.title,
+        board_id: card.columns?.boards?.id,
+        board_name: card.columns?.boards?.name || 'Unbekanntes Board',
+        column_name: card.columns?.name,
+        due_date: card.due_date
+    })).filter(task => task.column_name !== 'Done' && task.column_name !== 'Erledigt')
+
+    const openTasks = allTasks.slice(0, 5) // Show top 5
+
+    // 5. Filter Overdue Tasks
+    const now = new Date()
+    const overdueTasks = allTasks.filter(task =>
+        task.due_date && new Date(task.due_date) < now
+    )
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -88,29 +124,72 @@ export default async function DashboardPage() {
                 </div>
 
                 {hasBoards ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {boards.map((board) => (
-                            <Link key={board.id} href={`/boards/${board.id}`} className="group block h-full">
-                                <Card className="h-full hover:shadow-lg transition-all duration-200 cursor-pointer bg-white border-slate-200 group-hover:border-indigo-200">
-                                    <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                                        <div className="space-y-1.5">
-                                            <CardTitle className="group-hover:text-indigo-600 transition-colors text-xl">
-                                                {board.name}
-                                            </CardTitle>
-                                            <CardDescription className="text-sm font-medium text-slate-400">
-                                                {(board.workspaces as any)?.name || 'Mein Workspace'}
-                                            </CardDescription>
-                                        </div>
-                                        <DeleteBoardButton boardId={board.id} boardName={board.name} />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="flex items-center text-sm text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                                            Board öffnen <ArrowRight className="ml-1 h-4 w-4" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        ))}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                        {/* Task Lists Column (2/3 width on large screens) */}
+                        <div className="lg:col-span-2 space-y-6">
+                            {(openTasks.length > 0 || overdueTasks.length > 0) ? (
+                                <>
+                                    {overdueTasks.length > 0 && (
+                                        <TaskList
+                                            title="Überfällige Vorgänge"
+                                            description="Diese Aufgaben erfordern deine Aufmerksamkeit."
+                                            tasks={overdueTasks}
+                                            variant="warning"
+                                            icon={<Clock className="h-5 w-5 text-red-600" />}
+                                        />
+                                    )}
+
+                                    <TaskList
+                                        title="Meine offenen Vorgänge"
+                                        description="Deine nächsten Aufgaben nach Fälligkeit."
+                                        tasks={openTasks}
+                                        icon={<FileText className="h-5 w-5 text-primary" />}
+                                    />
+                                </>
+                            ) : (
+                                <div className="bg-white rounded-xl p-8 border border-slate-100 text-center shadow-sm">
+                                    <div className="bg-green-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <div className="text-2xl">🎉</div>
+                                    </div>
+                                    <h3 className="font-medium text-slate-900">Alles erledigt!</h3>
+                                    <p className="text-sm text-slate-500 mt-1">Du hast aktuell keine offenen Aufgaben.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Recent Boards Column (1/3 width) */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                <Layout className="h-4 w-4" />
+                                Aktuelle Boards
+                            </h2>
+                            <div className="space-y-4">
+                                {boards.slice(0, 3).map((board) => (
+                                    <Link key={board.id} href={`/boards/${board.id}`} className="block group">
+                                        <Card className="hover:shadow-md transition-all duration-200 cursor-pointer bg-white border-slate-200 group-hover:border-primary/50">
+                                            <CardHeader className="p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <CardTitle className="group-hover:text-primary transition-colors text-base">
+                                                        {board.name}
+                                                    </CardTitle>
+                                                    <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
+                                                </div>
+                                                <CardDescription className="text-xs mt-1">
+                                                    {(board.workspaces as any)?.name || 'Mein Workspace'}
+                                                </CardDescription>
+                                            </CardHeader>
+                                        </Card>
+                                    </Link>
+                                ))}
+                                {boards.length > 3 && (
+                                    <div className="text-center pt-2">
+                                        <span className="text-xs text-muted-foreground">
+                                            + {boards.length - 3} weitere Boards
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300 shadow-sm max-w-2xl mx-auto">
