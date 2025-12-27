@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ArrowLeft } from 'lucide-react'
+import { InviteDialog } from '@/components/settings/invite-dialog'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -119,8 +120,8 @@ export default async function SettingsPage() {
                                 <CardTitle>Team</CardTitle>
                                 <CardDescription>Mitarbeiter und Rollen verwalten.</CardDescription>
                             </div>
-                            {/* Invite Button (AP18 placeholder) */}
-                            <Button disabled variant="outline" size="sm">Mitglied einladen (Bald)</Button>
+                            {/* Invite Button */}
+                            <InviteDialog workspaceId={company.id} userRole={myRole} />
                         </div>
                     </CardHeader>
                     <CardContent>

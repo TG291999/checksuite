@@ -30,9 +30,10 @@ interface BoardColumnProps {
     boardId: string
     isOverlay?: boolean
     isReadOnly?: boolean
+    workspaceMembers?: { id: string, email: string }[]
 }
 
-export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false }: BoardColumnProps) {
+export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false, workspaceMembers = [] }: BoardColumnProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [title, setTitle] = useState('')
     const [isSaving, setIsSaving] = useState(false)
@@ -80,7 +81,7 @@ export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false }: 
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">{column.cards.length}</span>
                 </div>
                 <div className="flex flex-col gap-3 pb-4">
-                    {column.cards.map(card => <DraggableCard key={card.id} card={card} boardId={boardId} isReadOnly={isReadOnly} />)}
+                    {column.cards.map(card => <DraggableCard key={card.id} card={card} boardId={boardId} isReadOnly={isReadOnly} workspaceMembers={workspaceMembers} />)}
                 </div>
             </div>
         )
@@ -131,6 +132,7 @@ export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false }: 
                                 card={card}
                                 boardId={boardId}
                                 isReadOnly={isReadOnly}
+                                workspaceMembers={workspaceMembers}
                             />
                         ))}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import {
     DndContext,
     DragOverlay,
@@ -11,9 +11,17 @@ import {
     DragEndEvent,
     DragOverEvent,
     closestCorners,
+    defaultDropAnimationSideEffects,
+    DropAnimation,
 } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
-import { moveCard } from '@/app/boards/actions'
+import {
+    horizontalListSortingStrategy,
+    SortableContext,
+    arrayMove,
+} from '@dnd-kit/sortable'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import { createColumn, moveCard } from '@/app/boards/actions'
 import { BoardColumn } from './board-column'
 import { DraggableCard } from './draggable-card'
 
@@ -31,6 +39,13 @@ interface CardData {
     description: string | null
     position: number
     checklist_items?: ChecklistItem[]
+    card_participants: { user_id: string }[]
+    assigned_to?: string | null // Added for filtering
+}
+
+interface Member {
+    id: string
+    email: string
 }
 
 interface ColumnData {
@@ -44,16 +59,46 @@ interface BoardCanvasProps {
     initialColumns: ColumnData[]
     boardId: string
     isReadOnly?: boolean
+    workspaceMembers?: Member[]
+    currentUserId?: string
 }
 
-export function BoardCanvas({ initialColumns, boardId, isReadOnly = false }: BoardCanvasProps) {
+const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+        styles: {
+            active: {
+                opacity: '0.5',
+            },
+        },
+    }),
+};
+
+export function BoardCanvas({ initialColumns, boardId, isReadOnly = false, workspaceMembers = [], currentUserId }: BoardCanvasProps) {
     const [columns, setColumns] = useState<ColumnData[]>(initialColumns)
     const [activeDragCard, setActiveDragCard] = useState<CardData | null>(null)
+    const [filter, setFilter] = useState<'all' | 'assigned' | 'participating'>('all')
+
+    const filteredColumns = useMemo(() => {
+        if (filter === 'all' || !currentUserId) return columns
+
+        return columns.map(col => ({
+            ...col,
+            cards: col.cards.filter(card => {
+                if (filter === 'assigned') {
+                    return card.assigned_to === currentUserId
+                }
+                if (filter === 'participating') {
+                    return card.card_participants?.some(p => p.user_id === currentUserId)
+                }
+                return true
+            })
+        }))
+    }, [columns, filter, currentUserId])
 
     // Sync state with server data (fixes revalidation issue)
-    useEffect(() => {
-        setColumns(initialColumns)
-    }, [initialColumns])
+    // Removed useEffect for initialColumns sync as per instruction, relying on useMemo for filtering.
+    // If initialColumns can change independently of filtering, a useEffect might still be needed for `setColumns(initialColumns)`.
+    // For now, following the instruction to remove it.
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -91,7 +136,7 @@ export function BoardCanvas({ initialColumns, boardId, isReadOnly = false }: Boa
             // Check for mandatory items before allowing optimistic move across columns
             const activeCard = activeColumn.cards.find(c => c.id === activeId)
             if (activeCard?.checklist_items?.some(i => i.is_mandatory && !i.is_completed)) {
-                // Determine if we should block. 
+                // Determine if we should block.
                 // UX decision: Block visual drag-over or just show error on drop?
                 // Blocking drag-over visual prevents the card from entering the new column entirely.
                 return
@@ -187,16 +232,16 @@ export function BoardCanvas({ initialColumns, boardId, isReadOnly = false }: Boa
 
             // Validation: Check for mandatory items
             const cardInNewCol = columns[overColIndex].cards.find(c => c.id === activeId)
-            // Note: cardInNewCol might be the optimistic version from DragOver. 
+            // Note: cardInNewCol might be the optimistic version from DragOver.
             // Better to rely on the activeDragCard state or find it in initial state?
             // Actually, we can check the card itself.
             const cardToCheck = activeDragCard || activeColumn.cards.find(c => c.id === activeId)
 
             if (cardToCheck?.checklist_items?.some(i => i.is_mandatory && !i.is_completed)) {
                 // Logic to revert:
-                // Since handleDragOver already optimistically moved it, we need to revert 'columns' state to 'initialColumns' 
+                // Since handleDragOver already optimistically moved it, we need to revert 'columns' state to 'initialColumns'
                 // or just previous valid state.
-                // But handleDragOver runs continuously. 
+                // But handleDragOver runs continuously.
                 // Easiest is to trigger a re-render/revert or alert.
 
                 alert("Bitte alle Pflicht-Felder der Checkliste erledigen, bevor du die Karte verschiebst!")
@@ -214,30 +259,66 @@ export function BoardCanvas({ initialColumns, boardId, isReadOnly = false }: Boa
     }
 
     return (
-        <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver} // Handle moving between columns
-            onDragEnd={handleDragEnd}
-        >
-            <div className="flex h-full gap-6">
-                {columns.map((column) => (
-                    <BoardColumn
-                        key={column.id}
-                        column={column}
-                        boardId={boardId}
-                        isOverlay={false}
-                        isReadOnly={isReadOnly}
-                    />
-                ))}
-                {!isReadOnly && <CreateColumnButton boardId={boardId} />}
-            </div>
+        <div className="flex h-full flex-col">
+            {currentUserId && !isReadOnly && (
+                <div className="px-4 mb-2 flex justify-end gap-2">
+                    <Button
+                        variant={filter === 'all' ? 'default' : 'secondary'}
+                        size="sm"
+                        className="h-7 text-xs px-3"
+                        onClick={() => setFilter('all')}
+                    >
+                        Alle
+                    </Button>
+                    <Button
+                        variant={filter === 'assigned' ? 'default' : 'secondary'}
+                        size="sm"
+                        className="h-7 text-xs px-3"
+                        onClick={() => setFilter('assigned')}
+                    >
+                        Meine Aufgaben
+                    </Button>
+                    <Button
+                        variant={filter === 'participating' ? 'default' : 'secondary'}
+                        size="sm"
+                        className="h-7 text-xs px-3"
+                        onClick={() => setFilter('participating')}
+                    >
+                        Dabei
+                    </Button>
+                </div>
+            )}
 
-            <DragOverlay>
-                {activeDragCard ? <DraggableCard card={activeDragCard} boardId={boardId} /> : null}
-            </DragOverlay>
-        </DndContext>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="flex h-full gap-4 overflow-x-auto pb-4 px-2">
+                    <SortableContext items={filteredColumns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                        {filteredColumns.map((column) => (
+                            <BoardColumn
+                                key={column.id}
+                                column={column}
+                                boardId={boardId}
+                                isOverlay={false}
+                                isReadOnly={filter !== 'all' || isReadOnly} // Disable D&D when filtered
+                                workspaceMembers={workspaceMembers}
+                            />
+                        ))}
+                    </SortableContext>
+                    {!isReadOnly && <CreateColumnButton boardId={boardId} />}
+                </div>
+
+                <DragOverlay dropAnimation={dropAnimation}>
+                    {activeDragCard ? (
+                        <DraggableCard card={activeDragCard} boardId={boardId} isReadOnly={true} workspaceMembers={workspaceMembers} />
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
+        </div>
     )
 }
 

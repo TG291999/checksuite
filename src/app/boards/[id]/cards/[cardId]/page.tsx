@@ -11,6 +11,9 @@ import { Separator } from '@/components/ui/separator'
 import { CardDateSelector } from '@/components/board/card-date-selector'
 import { EditableTitle } from '@/components/board/editable-title'
 import { EditableDescription } from '@/components/board/editable-description'
+import { ParticipantSelector } from '@/components/board/participant-selector'
+import { AssigneeSelector } from '@/components/board/assignee-selector'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 interface PageProps {
     params: Promise<{ id: string; cardId: string }>
@@ -35,6 +38,9 @@ export default async function CardDetailsPage(props: PageProps) {
                 id,
                 content,
                 is_completed
+            ),
+            card_participants (
+                user_id
             )
         `)
         .eq('id', cardId)
@@ -55,6 +61,36 @@ export default async function CardDetailsPage(props: PageProps) {
     const sortedChecklist = (card.checklist_items || []).sort((a: any, b: any) =>
         (a.created_at || '').localeCompare(b.created_at || '')
     )
+
+    // Fetch Workspace Members (Available users)
+    const adminSupabase = createAdminClient()
+    const { data: { users: allUsers } } = await adminSupabase.auth.admin.listUsers()
+
+    // Get workspace ID from the card (via columns -> board -> workspace, or just assume context)
+    // We already fetch column -> board, let's fetch board workspace_id too if needed?
+    // Optimization: Just get board -> workspace_id from separate query or join?
+    // Let's assume we can get it from board table via column relation if we expand query
+    // BUT we didn't select board in columns join.
+    // Simpler: Fetch board details quickly:
+    const { data: boardData } = await supabase
+        .from('boards')
+        .select('workspace_id')
+        .eq('id', boardId)
+        .single()
+
+    // Fetch members
+    const { data: memberships } = await supabase
+        .from('workspace_members')
+        .select('user_id')
+        .eq('workspace_id', boardData?.workspace_id)
+
+    const memberIds = new Set(memberships?.map(m => m.user_id))
+    const workspaceMembers = (allUsers || [])
+        .filter(u => memberIds.has(u.id))
+        .map(u => ({
+            id: u.id,
+            email: u.email || '',
+        }))
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -130,6 +166,26 @@ export default async function CardDetailsPage(props: PageProps) {
                                         initialDate={card.due_date}
                                     />
                                 </div>
+
+                                <Separator />
+
+                                {/* Assignee */}
+                                <AssigneeSelector
+                                    cardId={cardId}
+                                    boardId={boardId}
+                                    assigneeId={card.assigned_to}
+                                    availableMembers={workspaceMembers}
+                                />
+
+                                <Separator />
+
+                                {/* Participants using new component */}
+                                <ParticipantSelector
+                                    cardId={cardId}
+                                    boardId={boardId}
+                                    participants={card.card_participants || []}
+                                    availableMembers={workspaceMembers}
+                                />
 
                                 <Separator />
 

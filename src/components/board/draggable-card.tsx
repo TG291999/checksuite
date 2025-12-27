@@ -20,16 +20,19 @@ interface CardData {
     description: string | null
     position: number
     due_date?: string | null
+    assigned_to?: string | null
     checklist_items?: ChecklistItem[]
+    card_participants?: { user_id: string }[]
 }
 
 interface DraggableCardProps {
     card: CardData
     boardId: string
     isReadOnly?: boolean
+    workspaceMembers?: { id: string, email: string }[]
 }
 
-export function DraggableCard({ card, boardId, isReadOnly = false }: DraggableCardProps) {
+export function DraggableCard({ card, boardId, isReadOnly = false, workspaceMembers = [] }: DraggableCardProps) {
     const {
         attributes,
         listeners,
@@ -99,6 +102,35 @@ export function DraggableCard({ card, boardId, isReadOnly = false }: DraggableCa
                                     style={{ width: `${(completedCount / totalCount) * 100}%` }}
                                 />
                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer: Assignee & Participants */}
+                <div className="flex items-center justify-between mt-2">
+                    {/* Primary Assignee */}
+                    {card.assigned_to ? (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 ring-2 ring-white" title={workspaceMembers.find(m => m.id === card.assigned_to)?.email}>
+                            {workspaceMembers.find(m => m.id === card.assigned_to)?.email?.[0]?.toUpperCase() || '?'}
+                        </div>
+                    ) : (
+                        <div /> // Spacer
+                    )}
+
+                    {/* Participants Avatars */}
+                    {card.card_participants && card.card_participants.length > 0 && (
+                        <div className="flex -space-x-1.5 overflow-hidden">
+                            {card.card_participants.map(p => {
+                                // Don't show assignee twice if they are also in participants (though DB allows it, UI should dedup?)
+                                // For now just show all.
+                                const member = workspaceMembers.find(m => m.id === p.user_id)
+                                const initial = member?.email?.[0]?.toUpperCase() || '?'
+                                return (
+                                    <div key={p.user_id} className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 ring-2 ring-white text-[9px] font-medium text-indigo-700" title={member?.email}>
+                                        {initial}
+                                    </div>
+                                )
+                            })}
                         </div>
                     )}
                 </div>

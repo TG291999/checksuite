@@ -381,4 +381,39 @@ export async function deleteColumn(boardId: string, columnId: string) {
     }
 
     revalidatePath(`/boards/${boardId}`)
+    revalidatePath(`/boards/${boardId}`)
+}
+
+export async function addParticipant(boardId: string, cardId: string, userId: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('card_participants')
+        .insert({ card_id: cardId, user_id: userId })
+
+    if (error) {
+        console.error('Error adding participant:', error)
+        throw new Error('Failed to add participant')
+    }
+
+    await logActivity(supabase, cardId, 'update', `Teilnehmer hinzugefügt`)
+    revalidatePath(`/boards/${boardId}`)
+}
+
+export async function removeParticipant(boardId: string, cardId: string, userId: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('card_participants')
+        .delete()
+        .eq('card_id', cardId)
+        .eq('user_id', userId)
+
+    if (error) {
+        console.error('Error removing participant:', error)
+        throw new Error('Failed to remove participant')
+    }
+
+    await logActivity(supabase, cardId, 'update', `Teilnehmer entfernt`)
+    revalidatePath(`/boards/${boardId}`)
 }

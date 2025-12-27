@@ -4,18 +4,32 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { BoardCanvas } from '@/components/board/board-canvas'
 import { ShareDialog } from '@/components/board/share-dialog'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 interface PageProps {
     params: Promise<{ id: string }>
 }
 
-// Data Models (could be moved to types/index.ts later)
+// Data Models
+interface ChecklistItem {
+    id: string
+    content: string
+    is_completed: boolean
+    is_mandatory: boolean
+}
+
+interface Participant {
+    user_id: string
+}
+
 interface CardData {
     id: string
     title: string
     description: string | null
     position: number
     due_date: string | null
+    checklist_items: ChecklistItem[]
+    card_participants: Participant[]
 }
 
 interface ColumnData {
@@ -42,6 +56,8 @@ export default async function BoardPage({ params }: PageProps) {
         .eq('id', id)
         .single()
 
+    const { data: { user } } = await supabase.auth.getUser()
+
     if (!board) {
         return notFound()
     }
@@ -66,10 +82,12 @@ export default async function BoardPage({ params }: PageProps) {
                     content,
                     is_completed,
                     is_mandatory
+                ),
+                card_participants (
+                    user_id
                 )
             )
         `)
-        .eq('board_id', id)
         .eq('board_id', id)
         .order('position', { ascending: true })
 
@@ -81,8 +99,27 @@ export default async function BoardPage({ params }: PageProps) {
         .eq('is_active', true)
         .single() // Might be null if no share exists
 
+    // 2.6 Fetch Workspace Members (for Assignee/Participant Picker)
+    const adminSupabase = createAdminClient()
+    const { data: { users: allUsers }, error: usersError } = await adminSupabase.auth.admin.listUsers()
+
+    // Fetch workspace membership
+    const { data: memberships } = await supabase
+        .from('workspace_members')
+        .select('user_id')
+        .eq('workspace_id', boardData.workspace_id)
+
+    const memberIds = new Set(memberships?.map(m => m.user_id))
+
+    // Filter and Map to usable object
+    const workspaceMembers = (allUsers || [])
+        .filter(u => memberIds.has(u.id))
+        .map(u => ({
+            id: u.id,
+            email: u.email || 'Unbekannt',
+        }))
+
     // 3. Transform & Sort
-    // We explicitly sort cards here because nested Supabase ordering can sometimes be tricky without specific foreign key configs
     const columns: ColumnData[] = (columnsRaw || []).map((col: any) => ({
         id: col.id,
         name: col.name,
@@ -113,6 +150,8 @@ export default async function BoardPage({ params }: PageProps) {
                 <BoardCanvas
                     initialColumns={columns}
                     boardId={boardData.id}
+                    workspaceMembers={workspaceMembers}
+                    currentUserId={user?.id}
                 />
             </main>
         </div>
