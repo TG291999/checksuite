@@ -26,6 +26,7 @@ interface ChecklistItem {
     id: string
     content: string
     is_completed: boolean
+    is_mandatory: boolean
 }
 
 interface CardData {

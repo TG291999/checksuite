@@ -7,7 +7,6 @@ export interface TemplateChecklistItem {
     id: string
     content: string
     position: number
-    is_mandatory: boolean
 }
 
 export interface TemplateStep {
@@ -82,8 +81,7 @@ export async function getTemplateBySlug(slug: string): Promise<ProcessTemplate |
                 template_checklist_items (
                     id,
                     content,
-                    position,
-                    is_mandatory
+                    position
                 )
             )
         `)
@@ -133,8 +131,7 @@ export async function getTemplateById(id: string): Promise<ProcessTemplate | nul
                 template_checklist_items (
                     id,
                     content,
-                    position,
-                    is_mandatory
+                    position
                 )
             )
         `)

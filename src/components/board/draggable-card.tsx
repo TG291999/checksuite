@@ -11,6 +11,7 @@ import Link from 'next/link'
 interface ChecklistItem {
     id: string
     is_completed: boolean
+    is_mandatory?: boolean
 }
 
 interface CardData {

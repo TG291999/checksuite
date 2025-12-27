@@ -22,6 +22,7 @@ interface ChecklistItem {
     id: string
     content: string
     is_completed: boolean
+    is_mandatory: boolean
 }
 
 interface CardData {
@@ -86,6 +87,15 @@ export function BoardCanvas({ initialColumns, boardId }: BoardCanvasProps) {
         if (!activeColumn || !overColumn) return
 
         if (activeColumn !== overColumn) {
+            // Check for mandatory items before allowing optimistic move across columns
+            const activeCard = activeColumn.cards.find(c => c.id === activeId)
+            if (activeCard?.checklist_items?.some(i => i.is_mandatory && !i.is_completed)) {
+                // Determine if we should block. 
+                // UX decision: Block visual drag-over or just show error on drop?
+                // Blocking drag-over visual prevents the card from entering the new column entirely.
+                return
+            }
+
             setColumns((prev) => {
                 const activeColIndex = prev.findIndex((c) => c.id === activeColumn.id)
                 const overColIndex = prev.findIndex((c) => c.id === overColumn.id)
@@ -172,11 +182,32 @@ export function BoardCanvas({ initialColumns, boardId }: BoardCanvasProps) {
                 await moveCard(boardId, activeId, activeColumn.id, overIndex)
             }
         } else {
-            // Moved to different column (Check DragOver handled visual state)
+            // Moved to different column
+
+            // Validation: Check for mandatory items
+            const cardInNewCol = columns[overColIndex].cards.find(c => c.id === activeId)
+            // Note: cardInNewCol might be the optimistic version from DragOver. 
+            // Better to rely on the activeDragCard state or find it in initial state?
+            // Actually, we can check the card itself.
+            const cardToCheck = activeDragCard || activeColumn.cards.find(c => c.id === activeId)
+
+            if (cardToCheck?.checklist_items?.some(i => i.is_mandatory && !i.is_completed)) {
+                // Logic to revert:
+                // Since handleDragOver already optimistically moved it, we need to revert 'columns' state to 'initialColumns' 
+                // or just previous valid state.
+                // But handleDragOver runs continuously. 
+                // Easiest is to trigger a re-render/revert or alert.
+
+                alert("Bitte alle Pflicht-Felder der Checkliste erledigen, bevor du die Karte verschiebst!")
+                setColumns(initialColumns) // Revert visual state
+                return
+            }
+
             // We need to persist the final state
             const overCards = columns[overColIndex].cards
             const newIndex = overCards.findIndex(c => c.id === activeId)
 
+            // If valid, proceed
             await moveCard(boardId, activeId, overColumn.id, newIndex)
         }
     }

@@ -82,6 +82,7 @@ export async function addChecklistItem(boardId: string, cardId: string, content:
             card_id: cardId,
             content: content,
             is_completed: false,
+            is_mandatory: false,
         })
 
     if (error) {
@@ -135,6 +136,22 @@ export async function updateChecklistItem(boardId: string, itemId: string, conte
     if (error) {
         console.error('Error updating checklist item:', error)
         throw new Error('Failed to update item')
+    }
+
+    revalidatePath(`/boards/${boardId}`)
+}
+
+export async function toggleChecklistMandatory(boardId: string, itemId: string, isMandatory: boolean) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('checklist_items')
+        .update({ is_mandatory: isMandatory })
+        .eq('id', itemId)
+
+    if (error) {
+        console.error('Error toggling checklist mandatory:', error)
+        throw new Error('Failed to toggle mandatory')
     }
 
     revalidatePath(`/boards/${boardId}`)

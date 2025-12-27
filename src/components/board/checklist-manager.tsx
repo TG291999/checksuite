@@ -5,13 +5,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
-import { Trash2, Plus, Check, X } from 'lucide-react'
-import { addChecklistItem, toggleChecklistItem, deleteChecklistItem, updateChecklistItem } from '@/app/boards/actions'
+import { Trash2, Plus, Check, X, AlertCircle } from 'lucide-react'
+import { addChecklistItem, toggleChecklistItem, deleteChecklistItem, updateChecklistItem, toggleChecklistMandatory } from '@/app/boards/actions'
 
 interface ChecklistItem {
     id: string
     content: string
     is_completed: boolean
+    is_mandatory: boolean
 }
 
 interface ChecklistManagerProps {
@@ -91,19 +92,35 @@ function ChecklistItemRow({ item, boardId }: { item: ChecklistItem, boardId: str
                         className={`text-sm block py-1.5 px-1 -ml-1 rounded border border-transparent hover:border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors ${item.is_completed ? 'text-muted-foreground line-through' : 'text-slate-700'}`}
                     >
                         {content}
+                        {item.is_mandatory && (
+                            <span className="ml-2 inline-flex items-center rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                                Pflicht
+                            </span>
+                        )}
                     </span>
                 )}
             </div>
 
             {!isEditing && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-500 hover:bg-red-50"
-                    onClick={() => deleteChecklistItem(boardId, item.id)}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 hover:bg-slate-100 ${item.is_mandatory ? 'text-amber-600 opacity-100' : 'text-slate-400'}`}
+                        title={item.is_mandatory ? "Als optional markieren" : "Als Pflicht markieren"}
+                        onClick={() => toggleChecklistMandatory(boardId, item.id, !item.is_mandatory)}
+                    >
+                        <AlertCircle className={`h-4 w-4 ${item.is_mandatory ? 'fill-amber-100' : ''}`} />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-50"
+                        onClick={() => deleteChecklistItem(boardId, item.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
             )}
         </div>
     )

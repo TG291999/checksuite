@@ -63,7 +63,8 @@ export default async function BoardPage({ params }: PageProps) {
                 checklist_items (
                     id,
                     content,
-                    is_completed
+                    is_completed,
+                    is_mandatory
                 )
             )
         `)

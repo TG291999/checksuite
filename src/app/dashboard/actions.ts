@@ -268,6 +268,7 @@ export async function createBoardFromTemplate(templateId: string, boardName: str
                                 content: item.content,
                                 position: idx,
                                 is_completed: false,
+                                is_mandatory: item.is_mandatory || false,
                             }))
                         )
                 }
