@@ -3,6 +3,39 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+async function logActivity(supabase: any, cardId: string, type: 'move' | 'create' | 'update' | 'checklist', content: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await supabase.from('card_activities').insert({
+        card_id: cardId,
+        user_id: user.id,
+        type,
+        content
+    })
+}
+
+export async function getActivities(cardId: string) {
+    const supabase = await createClient()
+
+    // Fetch activities with user email (mocked join or simpler just fetch and display)
+    // For MVP, knowing "someone" did it is okay, but names are better.
+    // Supabase auth users table is not publicly readable usually.
+    // We can fetch user metadata if needed or just rely on 'user_id' for now.
+    // Actually, let's fetch raw and maybe join with profiles if we had them.
+    // We don't have a public profiles table yet? 
+    // Checking previous steps: AP11 added templates.
+    // We'll stick to displaying "User" or just the content for now, or fetch user if possible.
+    // Let's just return the activities.
+    const { data } = await supabase
+        .from('card_activities')
+        .select('*')
+        .eq('card_id', cardId)
+        .order('created_at', { ascending: false })
+
+    return data || []
+}
+
 export async function createCard(boardId: string, columnId: string, title: string) {
     const supabase = await createClient()
 
@@ -19,21 +52,33 @@ export async function createCard(boardId: string, columnId: string, title: strin
     const newPosition = (maxPosData?.position ?? -1) + 1
 
     // 2. Insert new card
-    const { error } = await supabase
+    const { data: card, error } = await supabase
         .from('cards')
         .insert({
             column_id: columnId,
             title: title,
             position: newPosition,
+            assigned_to: (await supabase.auth.getUser()).data.user?.id
         })
+        .select()
+        .single()
 
-    if (error) {
+    if (error || !card) {
         console.error('Error creating card:', error)
         throw new Error('Failed to create card')
     }
 
+    await logActivity(supabase, card.id, 'create', `Karte "${title}" erstellt`)
+
+    // 3. Revalidate
     // 3. Revalidate
     revalidatePath(`/boards/${boardId}`)
+
+    // 4. Log Activity
+    // We need the card ID. insert returns row?
+    // Let's update the insert above to select.
+    // Wait, the previous code didn't select.
+    // I need to change the insert to select single().
 }
 
 export async function moveCard(boardId: string, cardId: string, newColumnId: string, newPosition: number) {
@@ -55,6 +100,8 @@ export async function moveCard(boardId: string, cardId: string, newColumnId: str
     revalidatePath(`/boards/${boardId}`)
     revalidatePath(`/boards/${boardId}`)
     revalidatePath(`/boards/${boardId}`)
+
+    await logActivity(supabase, cardId, 'move', `Karte verschoben`)
 }
 
 export async function updateCard(boardId: string, cardId: string, updates: { title?: string, description?: string, due_date?: string | null, assigned_to?: string | null }) {
@@ -90,6 +137,8 @@ export async function addChecklistItem(boardId: string, cardId: string, content:
         throw new Error('Failed to add item')
     }
 
+    await logActivity(supabase, cardId, 'checklist', `Checkliste: "${content}" hinzugefügt`)
+
     revalidatePath(`/boards/${boardId}`)
 }
 
@@ -104,6 +153,19 @@ export async function toggleChecklistItem(boardId: string, itemId: string, isCom
     if (error) {
         console.error('Error toggling checklist item:', error)
         throw new Error('Failed to toggle item')
+    }
+
+    // Need cardId to log. Since we only have boardId and itemId, we need to fetch cardId? 
+    // Or just log it blindly? The logActivity requires cardId.
+    // Let's quickly fetch the card_id from the item.
+    const { data: item } = await supabase
+        .from('checklist_items')
+        .select('card_id, content')
+        .eq('id', itemId)
+        .single()
+
+    if (item) {
+        await logActivity(supabase, item.card_id, 'checklist', `Checkliste: "${item.content}" ${isCompleted ? 'erledigt' : 'unerledigt'}`)
     }
 
     revalidatePath(`/boards/${boardId}`)

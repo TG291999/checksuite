@@ -8,6 +8,7 @@ import {
     SheetDescription,
 } from '@/components/ui/sheet'
 import { ChecklistManager } from './checklist-manager'
+import { ActivityFeed } from './activity-feed'
 
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -100,6 +101,10 @@ export function CardDetailSheet({ card, isOpen, onClose, boardId }: CardDetailSh
                         boardId={boardId}
                         items={card.checklist_items || []}
                     />
+                </div>
+
+                <div className="py-2 border-t pt-6">
+                    <ActivityFeed cardId={card.id} />
                 </div>
             </SheetContent>
         </Sheet>
