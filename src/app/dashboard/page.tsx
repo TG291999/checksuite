@@ -6,7 +6,7 @@ import { TemplatePicker } from '@/components/templates/template-picker'
 import { TaskList } from '@/components/dashboard/task-list'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { ArrowRight, Layout, Clock, FileText } from 'lucide-react'
+import { ArrowRight, Layout, Clock, FileText, BarChart } from 'lucide-react'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -92,6 +92,10 @@ export default async function DashboardPage() {
                     <span className="tracking-tight">CheckSuite</span>
                 </div>
                 <div className="flex items-center gap-4">
+                    <Link href="/dashboard/analytics" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                        <BarChart className="h-4 w-4" />
+                        <span className="hidden sm:inline">Analytics</span>
+                    </Link>
                     <span className="text-sm text-slate-500 hidden sm:inline-block">{user.email}</span>
                     <form action={async () => {
                         'use server'
