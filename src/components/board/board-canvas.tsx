@@ -43,9 +43,10 @@ interface ColumnData {
 interface BoardCanvasProps {
     initialColumns: ColumnData[]
     boardId: string
+    isReadOnly?: boolean
 }
 
-export function BoardCanvas({ initialColumns, boardId }: BoardCanvasProps) {
+export function BoardCanvas({ initialColumns, boardId, isReadOnly = false }: BoardCanvasProps) {
     const [columns, setColumns] = useState<ColumnData[]>(initialColumns)
     const [activeDragCard, setActiveDragCard] = useState<CardData | null>(null)
 
@@ -227,10 +228,10 @@ export function BoardCanvas({ initialColumns, boardId }: BoardCanvasProps) {
                         column={column}
                         boardId={boardId}
                         isOverlay={false}
+                        isReadOnly={isReadOnly}
                     />
                 ))}
-                {/* Add Column Placeholder */}
-                <CreateColumnButton boardId={boardId} />
+                {!isReadOnly && <CreateColumnButton boardId={boardId} />}
             </div>
 
             <DragOverlay>

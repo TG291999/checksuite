@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { BoardCanvas } from '@/components/board/board-canvas'
+import { ShareDialog } from '@/components/board/share-dialog'
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -69,7 +70,16 @@ export default async function BoardPage({ params }: PageProps) {
             )
         `)
         .eq('board_id', id)
+        .eq('board_id', id)
         .order('position', { ascending: true })
+
+    // 2.5 Fetch Active Share Token
+    const { data: shareData } = await supabase
+        .from('board_shares')
+        .select('token')
+        .eq('board_id', id)
+        .eq('is_active', true)
+        .single() // Might be null if no share exists
 
     // 3. Transform & Sort
     // We explicitly sort cards here because nested Supabase ordering can sometimes be tricky without specific foreign key configs
@@ -94,7 +104,7 @@ export default async function BoardPage({ params }: PageProps) {
                     <h1 className="text-lg font-bold text-slate-800">{boardData.name}</h1>
                 </div>
                 <div>
-                    {/* Actions */}
+                    <ShareDialog boardId={boardData.id} initialToken={shareData?.token} />
                 </div>
             </header>
 

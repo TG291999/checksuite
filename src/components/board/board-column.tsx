@@ -29,9 +29,10 @@ interface BoardColumnProps {
     column: ColumnData
     boardId: string
     isOverlay?: boolean
+    isReadOnly?: boolean
 }
 
-export function BoardColumn({ column, boardId, isOverlay }: BoardColumnProps) {
+export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false }: BoardColumnProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [title, setTitle] = useState('')
     const [isSaving, setIsSaving] = useState(false)
@@ -79,7 +80,7 @@ export function BoardColumn({ column, boardId, isOverlay }: BoardColumnProps) {
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">{column.cards.length}</span>
                 </div>
                 <div className="flex flex-col gap-3 pb-4">
-                    {column.cards.map(card => <DraggableCard key={card.id} card={card} boardId={boardId} />)}
+                    {column.cards.map(card => <DraggableCard key={card.id} card={card} boardId={boardId} isReadOnly={isReadOnly} />)}
                 </div>
             </div>
         )
@@ -93,27 +94,30 @@ export function BoardColumn({ column, boardId, isOverlay }: BoardColumnProps) {
                     columnId={column.id}
                     boardId={boardId}
                     initialName={column.name}
+                    isReadOnly={isReadOnly}
                 />
                 <div className="flex items-center gap-1">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
                         {column.cards.length}
                     </span>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={async () => {
-                            if (confirm(`Spalte "${column.name}" wirklich löschen? Alle Karten in dieser Spalte werden ebenfalls gelöscht.`)) {
-                                try {
-                                    await import('@/app/boards/actions').then(mod => mod.deleteColumn(boardId, column.id))
-                                } catch (error) {
-                                    console.error('Failed to delete column', error)
+                    {!isReadOnly && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 hover:bg-red-50"
+                            onClick={async () => {
+                                if (confirm(`Spalte "${column.name}" wirklich löschen? Alle Karten in dieser Spalte werden ebenfalls gelöscht.`)) {
+                                    try {
+                                        await import('@/app/boards/actions').then(mod => mod.deleteColumn(boardId, column.id))
+                                    } catch (error) {
+                                        console.error('Failed to delete column', error)
+                                    }
                                 }
-                            }
-                        }}
-                    >
-                        <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                            }}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -126,11 +130,12 @@ export function BoardColumn({ column, boardId, isOverlay }: BoardColumnProps) {
                                 key={card.id}
                                 card={card}
                                 boardId={boardId}
+                                isReadOnly={isReadOnly}
                             />
                         ))}
 
                         {/* Inline Create Form */}
-                        {isEditing ? (
+                        {isEditing && (
                             <form onSubmit={handleSubmit} className="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white p-3 shadow-sm">
                                 <Input
                                     ref={inputRef}
@@ -157,7 +162,9 @@ export function BoardColumn({ column, boardId, isOverlay }: BoardColumnProps) {
                                     </Button>
                                 </div>
                             </form>
-                        ) : (
+                        )}
+
+                        {!isEditing && !isReadOnly && (
                             <Button
                                 variant="ghost"
                                 className="flex h-9 w-full items-center justify-start gap-2 px-2 text-slate-500 hover:bg-slate-200/50 hover:text-slate-800"
@@ -174,7 +181,7 @@ export function BoardColumn({ column, boardId, isOverlay }: BoardColumnProps) {
     )
 }
 
-function EditableColumnHeader({ columnId, boardId, initialName }: { columnId: string, boardId: string, initialName: string }) {
+function EditableColumnHeader({ columnId, boardId, initialName, isReadOnly }: { columnId: string, boardId: string, initialName: string, isReadOnly: boolean }) {
     const [isEditing, setIsEditing] = useState(false)
     const [name, setName] = useState(initialName)
     const [tempName, setTempName] = useState(initialName)
@@ -234,8 +241,8 @@ function EditableColumnHeader({ columnId, boardId, initialName }: { columnId: st
 
     return (
         <h3
-            onClick={() => setIsEditing(true)}
-            className="font-semibold text-slate-700 text-sm uppercase tracking-wider cursor-pointer hover:bg-slate-200/50 rounded px-1 -mx-1 transition-colors truncate flex-1"
+            onClick={() => !isReadOnly && setIsEditing(true)}
+            className={`font-semibold text-slate-700 text-sm uppercase tracking-wider rounded px-1 -mx-1 transition-colors truncate flex-1 ${!isReadOnly ? 'cursor-pointer hover:bg-slate-200/50' : ''}`}
         >
             {name}
         </h3>

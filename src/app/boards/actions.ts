@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+import { createAdminClient } from '@/lib/supabase/admin'
+
 async function logActivity(supabase: any, cardId: string, type: 'move' | 'create' | 'update' | 'checklist', content: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -262,8 +264,106 @@ export async function updateColumn(boardId: string, columnId: string, name: stri
         console.error('Error updating column:', error)
         throw new Error('Failed to update column')
     }
+    revalidatePath(`/boards/${boardId}`)
+}
+
+export async function createShareLink(boardId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('Unauthorized')
+
+    // Check if link exists
+    const { data: existing } = await supabase
+        .from('board_shares')
+        .select('token')
+        .eq('board_id', boardId)
+        .eq('is_active', true)
+        .single()
+
+    if (existing) return existing.token
+
+    const token = crypto.randomUUID()
+
+    const { error } = await supabase
+        .from('board_shares')
+        .insert({
+            board_id: boardId,
+            token,
+            is_active: true
+        })
+
+    if (error) {
+        console.error('Error creating share link:', error)
+        throw new Error('Failed to create share link')
+    }
 
     revalidatePath(`/boards/${boardId}`)
+    return token
+}
+
+export async function revokeShareLink(boardId: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('board_shares')
+        .update({ is_active: false })
+        .eq('board_id', boardId)
+
+    if (error) throw new Error('Failed to revoke link')
+
+    revalidatePath(`/boards/${boardId}`)
+}
+
+export async function getSharedBoard(token: string) {
+    const supabase = createAdminClient()
+
+    // 1. Validate token
+    const { data: share, error: shareError } = await supabase
+        .from('board_shares')
+        .select('board_id')
+        .eq('token', token)
+        .eq('is_active', true)
+        .single()
+
+    if (shareError || !share) return null
+
+    // 2. Fetch Board Data (Read-Only)
+    const { data: board } = await supabase
+        .from('boards')
+        .select('*')
+        .eq('id', share.board_id)
+        .single()
+
+    if (!board) return null
+
+    // 3. Fetch Columns & Cards
+    const { data: columns } = await supabase
+        .from('columns')
+        .select(`
+            *,
+            cards (
+                *,
+                checklist_items (*)
+            )
+        `)
+        .eq('board_id', board.id)
+        .order('position')
+
+    // Sort cards and checklist items (Supabase order() on foreign tables is tricky in simple query, do in JS)
+    const sortedColumns = columns?.map(col => ({
+        ...col,
+        cards: col.cards
+            .sort((a: any, b: any) => a.position - b.position)
+            .map((card: any) => ({
+                ...card,
+                checklist_items: card.checklist_items.sort((a: any, b: any) =>
+                    (a.created_at > b.created_at ? 1 : -1) // Simple sort by creation
+                )
+            }))
+    }))
+
+    return { ...board, columns: sortedColumns }
 }
 
 export async function deleteColumn(boardId: string, columnId: string) {
