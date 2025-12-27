@@ -72,7 +72,7 @@ export async function seedNewUser(supabase: SupabaseClient, userId: string) {
         await supabase.from('cards').insert([
             {
                 column_id: todoColumn.id,
-                title: 'Willkommen bei Flowboard! 👋',
+                title: 'Willkommen bei CheckSuite! 👋',
                 description: 'Das ist eine Demo-Karte.',
                 position: 0,
                 assigned_to: userId,

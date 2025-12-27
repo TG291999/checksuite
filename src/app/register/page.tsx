@@ -15,7 +15,7 @@ export default async function RegisterPage(props: { searchParams: Promise<{ erro
                 <CardHeader>
                     <CardTitle className="text-2xl">Registrieren</CardTitle>
                     <CardDescription>
-                        Erstelle einen neuen Account, um mit Flowboard zu starten.
+                        Erstelle einen neuen Account, um mit CheckSuite zu starten.
                     </CardDescription>
                 </CardHeader>
                 <form action={signup}>

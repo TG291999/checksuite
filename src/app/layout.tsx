@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils'
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: 'Flowboard',
-  description: 'B2B Process Management',
+  title: 'CheckSuite',
+  description: 'Built to be in check. Struktur, die bleibt.',
 }
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable)}>
         {children}
       </body>

@@ -1,49 +1,43 @@
-# Flowboard 🚀
+# CheckSuite 🚀
 
-**Flowboard** ist ein modernes Kanban-Board für agile Teams – entwickelt als MVP mit Fokus auf "Process Hygiene" und deutschem Datenschutz-Standard (Self-Hosted/Supabase).
+**CheckSuite** ist ein modernes Kanban-Board für agile Teams – entwickelt als MVP mit Fokus auf "Process Hygiene" und deutschem Datenschutz-Standard (Self-Hosted/Supabase).
 
 ## Features
 
-- **Pipeline-Management**: Organisiere Aufgaben in Spalten (To Do, In Progress, Done).
-- **Drag & Drop**: Intuitive Bedienung mit sofortigem Feedback.
-- **Checklisten (USP)**: Detaillierte Aufgabenunterteilung mit Fortschrittsanzeige.
-- **Fälligkeiten**: Visuelle Warnungen bei überfälligen Aufgaben.
-- **Teams**: Workspace-basierte Datenhaltung.
+- ✅ Board & Card Management (Kanban-Style)
+- ✅ Drag & Drop
+- ✅ Checklisten pro Karte
+- ✅ Inline-Editing (Titel, Beschreibung, Checklisten)
+- ✅ Spalten erstellen, umbenennen, löschen
+- ✅ Boards erstellen & löschen
+- ✅ Email/Password Auth
+- ✅ Deutsche Lokalisierung
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React, Tailwind CSS, shadcn/ui.
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime).
-- **Interactions**: `@dnd-kit` für Drag & Drop, Server Actions für Mutationen.
+- **Frontend:** Next.js 15 (App Router), React 19, TypeScript
+- **Styling:** Tailwind CSS, shadcn/ui
+- **Backend:** Supabase (Auth + Postgres)
+- **Drag & Drop:** @dnd-kit
 
 ## Setup
 
-### 1. Voraussetzungen
-- Node.js 18+
-- Ein Supabase-Projekt (kostenlos erstellbar auf supabase.com)
-
-### 2. Installation
 ```bash
-git clone <repo-url>
-cd flowboard
+git clone https://github.com/TG291999/checksuite.git
+cd checksuite
 npm install
 ```
 
-### 3. Environment Variables
-Erstelle eine `.env.local` Datei:
-```ini
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+Erstelle `.env.local`:
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 4. Datenbank Setup
-Führe den Inhalt von `supabase/schema.sql` im Supabase SQL Editor aus, um Tabellen, Policies und Trigger zu erstellen.
-
-### 5. Starten
 ```bash
 npm run dev
 ```
-Besuche `http://localhost:3000`.
 
-## Lizenz
+## License
+
 MIT

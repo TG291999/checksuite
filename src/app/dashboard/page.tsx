@@ -45,7 +45,7 @@ export default async function DashboardPage() {
             <header className="bg-white border-b px-6 h-16 flex items-center justify-between sticky top-0 z-10">
                 <div className="flex items-center gap-2 font-bold text-xl text-indigo-600">
                     <Layout className="h-6 w-6" />
-                    <span className="tracking-tight">Flowboard</span>
+                    <span className="tracking-tight">CheckSuite</span>
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-sm text-slate-500 hidden sm:inline-block">{user.email}</span>
