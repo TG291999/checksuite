@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
-export async function seedNewUser(supabase: SupabaseClient, userId: string) {
+export async function seedNewUser(supabase: SupabaseClient, userId: string, companyName?: string) {
     let workspaceId: string | null = null
 
     // 1. Check if workspace already exists AND user is a member
@@ -23,7 +23,7 @@ export async function seedNewUser(supabase: SupabaseClient, userId: string) {
         const { data: workspace, error: workspaceError } = await supabase
             .from('workspaces')
             .insert({
-                name: 'Mein Workspace',
+                name: companyName || 'Mein Workspace',
                 owner_id: userId,
             })
             .select()

@@ -41,6 +41,8 @@ export async function signup(formData: FormData) {
         redirect('/register?error=Missing credentials')
     }
 
+    const companyName = (formData.get('companyName') as string)?.trim()
+
     // Basic email format validation (optional, Supabase does it too)
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         redirect('/register?error=Invalid email format')
@@ -72,7 +74,7 @@ export async function signup(formData: FormData) {
             // However, strictly RLS policies check auth.uid().
         }
 
-        const boardId = await seedNewUser(supabase, data.user.id)
+        const boardId = await seedNewUser(supabase, data.user.id, companyName)
         if (boardId) {
             redirectTo = `/boards/${boardId}`
         }

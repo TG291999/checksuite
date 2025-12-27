@@ -26,6 +26,13 @@ export default async function RegisterPage(props: { searchParams: Promise<{ erro
                             </div>
                         )}
                         <div className="grid gap-2">
+                            <Label htmlFor="companyName">Firma / Organisation</Label>
+                            <Input id="companyName" name="companyName" placeholder="Meine Firma GmbH" required />
+                            <p className="text-[0.8rem] text-muted-foreground">
+                                Neue Organisation erstellen. Wenn Sie bereits eingeladen wurden, nutzen Sie den Link in der E-Mail.
+                            </p>
+                        </div>
+                        <div className="grid gap-2">
                             <Label htmlFor="email">E-Mail</Label>
                             <Input id="email" name="email" type="email" placeholder="m@example.com" required />
                         </div>
