@@ -55,7 +55,7 @@ export async function createBoard(formData: FormData) {
         // Create workspace if none exists
         const { data: newWorkspace, error: wsError } = await supabase
             .from('workspaces')
-            .insert({ name: 'Mein Workspace' })
+            .insert({ name: 'Meine Firma' })
             .select()
             .single()
 
@@ -192,7 +192,7 @@ export async function createBoardFromTemplate(templateId: string, boardName: str
     if (!workspaces || workspaces.length === 0) {
         const { data: newWorkspace, error: wsError } = await supabase
             .from('workspaces')
-            .insert({ name: 'Mein Workspace', owner_id: user.id })
+            .insert({ name: 'Meine Firma', owner_id: user.id })
             .select()
             .single()
 

@@ -175,7 +175,7 @@ export default async function DashboardPage() {
                                                     <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
                                                 </div>
                                                 <CardDescription className="text-xs mt-1">
-                                                    {(board.workspaces as any)?.name || 'Mein Workspace'}
+                                                    {(board.workspaces as any)?.name || 'Meine Firma'}
                                                 </CardDescription>
                                             </CardHeader>
                                         </Card>
@@ -200,7 +200,7 @@ export default async function DashboardPage() {
                             Noch keine Boards
                         </h3>
                         <p className="text-slate-500 mb-8 max-w-md mx-auto text-lg">
-                            Dein Workspace ist besenrein, aber leer. <br />
+                            Deine Firma ist eingerichtet, aber noch leer. <br />
                             Starte mit einem Template oder erstelle ein leeres Board.
                         </p>
                         <div className="flex gap-3 justify-center">
