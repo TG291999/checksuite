@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { CreateBoardDialog } from './create-board-dialog'
 import { DeleteBoardButton } from './delete-board-button'
+import { TemplatePicker } from '@/components/templates/template-picker'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { ArrowRight, Layout } from 'lucide-react'
@@ -36,6 +37,13 @@ export default async function DashboardPage() {
         `)
         .in('workspace_id', workspaceIds)
         .order('created_at', { ascending: false })
+
+    // 3. Fetch available templates
+    const { data: templates } = await supabase
+        .from('process_templates')
+        .select('id, slug, name, description, icon, category')
+        .eq('is_active', true)
+        .order('name')
 
     const hasBoards = boards && boards.length > 0
 
@@ -72,7 +80,10 @@ export default async function DashboardPage() {
                     </div>
 
                     {hasBoards && (
-                        <CreateBoardDialog />
+                        <div className="flex gap-2">
+                            <TemplatePicker templates={templates || []} />
+                            <CreateBoardDialog />
+                        </div>
                     )}
                 </div>
 
@@ -111,9 +122,12 @@ export default async function DashboardPage() {
                         </h3>
                         <p className="text-slate-500 mb-8 max-w-md mx-auto text-lg">
                             Dein Workspace ist besenrein, aber leer. <br />
-                            Erstelle dein erstes Projekt, um loszulegen.
+                            Starte mit einem Template oder erstelle ein leeres Board.
                         </p>
-                        <CreateBoardDialog />
+                        <div className="flex gap-3 justify-center">
+                            <TemplatePicker templates={templates || []} />
+                            <CreateBoardDialog />
+                        </div>
                     </div>
                 )}
             </main>
