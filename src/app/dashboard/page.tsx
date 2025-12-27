@@ -6,7 +6,7 @@ import { TemplatePicker } from '@/components/templates/template-picker'
 import { TaskList } from '@/components/dashboard/task-list'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { ArrowRight, Layout, Clock, FileText, BarChart } from 'lucide-react'
+import { ArrowRight, Layout, Clock, FileText, BarChart, Users } from 'lucide-react'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -19,10 +19,11 @@ export default async function DashboardPage() {
     // 1. Fetch Workspaces the user is a member of
     const { data: memberWorkspaces } = await supabase
         .from('workspace_members')
-        .select('workspace_id')
+        .select('workspace_id, role')
         .eq('user_id', user.id)
 
     const workspaceIds = memberWorkspaces?.map(mw => mw.workspace_id) || []
+    const isAdminOrOwner = memberWorkspaces?.some(mw => mw.role === 'owner' || mw.role === 'admin')
 
     // 2. Fetch Boards in those workspaces
     const { data: boards } = await supabase
@@ -161,8 +162,53 @@ export default async function DashboardPage() {
                             )}
                         </div>
 
+
                         {/* Recent Boards Column (1/3 width) */}
-                        <div className="space-y-4">
+                        <div className="space-y-6">
+                            {/* Management Actions (Only for Owner/Admin) */}
+                            {isAdminOrOwner && (
+                                <div className="space-y-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                        <Users className="h-4 w-4" />
+                                        Verwaltung
+                                    </h2>
+                                    <Link href="/dashboard/team">
+                                        <Card className="hover:shadow-md transition-all duration-200 cursor-pointer bg-white border-slate-200 group-hover:border-primary/50">
+                                            <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
+                                                <div>
+                                                    <CardTitle className="text-base text-indigo-700">
+                                                        Team & Rollen
+                                                    </CardTitle>
+                                                    <CardDescription className="text-xs mt-1">
+                                                        Mitglieder einladen, Rollen verwalten
+                                                    </CardDescription>
+                                                </div>
+                                                <div className="bg-indigo-50 p-2 rounded-full">
+                                                    <Users className="h-4 w-4 text-indigo-600" />
+                                                </div>
+                                            </CardHeader>
+                                        </Card>
+                                    </Link>
+                                    <Link href="/dashboard/management">
+                                        <Card className="hover:shadow-md transition-all duration-200 cursor-pointer bg-white border-slate-200 group-hover:border-primary/50">
+                                            <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
+                                                <div>
+                                                    <CardTitle className="text-base text-indigo-700">
+                                                        Management
+                                                    </CardTitle>
+                                                    <CardDescription className="text-xs mt-1">
+                                                        KPIs, Auslastung & Engpässe
+                                                    </CardDescription>
+                                                </div>
+                                                <div className="bg-indigo-50 p-2 rounded-full">
+                                                    <BarChart className="h-4 w-4 text-indigo-600" />
+                                                </div>
+                                            </CardHeader>
+                                        </Card>
+                                    </Link>
+                                </div>
+                            )}
+
                             <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                                 <Layout className="h-4 w-4" />
                                 Aktuelle Boards
