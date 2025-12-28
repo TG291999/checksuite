@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { InviteDialog } from '@/components/settings/invite-dialog'
-import { ArrowLeft, Users } from 'lucide-react'
+import { ArrowLeft, Users, Shield } from 'lucide-react'
+import { RoleManager } from '@/components/team/role-manager'
+import { MemberRoleSelect } from '@/components/team/member-role-select'
 
 export default async function TeamPage() {
     const supabase = await createClient()
@@ -31,13 +33,12 @@ export default async function TeamPage() {
         .single()
 
     if (!workspaceMember || !workspaceMember.workspaces) {
-        redirect('/dashboard') // Should not happen if correctly seeded
+        redirect('/dashboard')
     }
 
     const company = workspaceMember.workspaces as any
     const myRole = workspaceMember.role
 
-    // STRICT: Only Owner/Admin can see this page
     if (myRole !== 'owner' && myRole !== 'admin') {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -55,19 +56,24 @@ export default async function TeamPage() {
         )
     }
 
-    // 2. Fetch Members (requires Admin client for Emails)
+    // 2. Fetch Members & Roles
     const adminSupabase = createAdminClient()
-    
-    // Fetch members from DB
+
     const { data: members } = await supabase
         .from('workspace_members')
         .select('*')
         .eq('workspace_id', company.id)
         .order('joined_at', { ascending: true })
 
+    const { data: roles } = await supabase
+        .from('organization_roles')
+        .select('*')
+        .eq('organization_id', company.id)
+        .order('name')
+
     // Fetch user details from Auth (Admin)
     const { data: { users } } = await adminSupabase.auth.admin.listUsers()
-    
+
     const userMap = new Map<string, string>()
     if (users) {
         users.forEach((u: any) => userMap.set(u.id, u.email || ''))
@@ -88,9 +94,24 @@ export default async function TeamPage() {
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                     <InviteDialog workspaceId={company.id} userRole={myRole} />
+                    <InviteDialog workspaceId={company.id} userRole={myRole} />
                 </div>
             </div>
+
+            {/* Role Management Section */}
+            <Card className="bg-slate-50 border-dashed">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-indigo-600" /> Funktionale Rollen
+                    </CardTitle>
+                    <CardDescription>
+                        Definieren Sie Zuständigkeiten (z.B. "Buchhaltung", "IT Support"), um Aufgaben automatisch zuzuweisen.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RoleManager roles={roles || []} />
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -111,16 +132,24 @@ export default async function TeamPage() {
                                         <p className="text-sm font-medium text-slate-900">
                                             {member.email}
                                         </p>
-                                        <p className="text-xs text-slate-500">
-                                            Beigetreten am {new Date(member.joined_at).toLocaleDateString()}
-                                        </p>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <span>Beigetreten am {new Date(member.joined_at).toLocaleDateString()}</span>
+                                            {member.role === 'owner' && <span className="text-amber-600 font-semibold">• Eigentümer</span>}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                     <Badge variant={member.role === 'owner' ? 'default' : 'secondary'} className="capitalize bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-none border border-slate-200">
+                                <div className="flex items-center gap-4">
+                                    {/* Functional Role Selector */}
+                                    <MemberRoleSelect
+                                        userId={member.user_id}
+                                        currentRoleId={member.functional_role_id}
+                                        roles={roles || []}
+                                    />
+
+                                    {/* Admin Badge */}
+                                    <Badge variant={member.role === 'owner' ? 'default' : 'secondary'} className="capitalize bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-none border border-slate-200">
                                         {member.role === 'admin' ? 'Admin' : member.role === 'owner' ? 'Inhaber' : 'Mitglied'}
                                     </Badge>
-                                    {/* Future: Actions Dropdown (Change Role, Remove) */}
                                 </div>
                             </div>
                         ))}
