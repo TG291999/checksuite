@@ -14,6 +14,7 @@ export function MyDaySection({ title, icon: Icon, tasks, variant = 'default', em
     const hasTasks = tasks.length > 0
 
     return (
+        <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className={cn(
@@ -49,6 +50,6 @@ export function MyDaySection({ title, icon: Icon, tasks, variant = 'default', em
                     ))
                 )}
             </div>
-        </div >
+        </div>
     )
 }
