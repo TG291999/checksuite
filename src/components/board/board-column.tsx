@@ -9,6 +9,7 @@ import { Plus, Check, X, Trash2 } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { DraggableCard } from './draggable-card'
+import { de } from '@/lib/i18n/de'
 
 // Types (mirrors what we pass from the server page)
 interface CardData {
@@ -123,9 +124,15 @@ export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false, wo
             </div>
 
             {/* Cards Container */}
-            <div className="flex-1 overflow-y-auto pr-1">
+            <div className="flex-1 overflow-y-auto pr-1 min-h-[150px]">
                 <SortableContext items={column.cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                    <div className="flex flex-col gap-3 pb-4">
+                    <div className="flex flex-col gap-3 pb-4 h-full">
+                        {column.cards.length === 0 && !isReadOnly && (
+                            <div className="flex h-24 items-center justify-center rounded border-2 border-dashed border-slate-200 text-slate-400 text-sm">
+                                Hier ablegen
+                            </div>
+                        )}
+
                         {column.cards.map((card) => (
                             <DraggableCard
                                 key={card.id}
@@ -150,7 +157,7 @@ export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false, wo
                                 />
                                 <div className="flex items-center gap-2">
                                     <Button type="submit" size="sm" className="h-7 px-3 text-xs" disabled={isSaving || !title.trim()}>
-                                        {isSaving ? '...' : 'Speichern'}
+                                        {isSaving ? '...' : (de?.common?.save || 'Speichern')}
                                     </Button>
                                     <Button
                                         type="button"
@@ -160,7 +167,7 @@ export function BoardColumn({ column, boardId, isOverlay, isReadOnly = false, wo
                                         onClick={() => setIsEditing(false)}
                                         disabled={isSaving}
                                     >
-                                        Abbrechen
+                                        {de?.common?.cancel || 'Abbrechen'}
                                     </Button>
                                 </div>
                             </form>
