@@ -11,6 +11,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { de } from '@/lib/i18n/de'
 
 export default async function BoardsPage() {
     const boards = await getBoards()
@@ -19,9 +20,9 @@ export default async function BoardsPage() {
         <div className="flex-1 space-y-8 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Boards</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">{de.boards.title}</h2>
                     <p className="text-muted-foreground">
-                        Aktive Boards und Prozesse verwalten.
+                        {de.boards.subtitle}
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -32,7 +33,7 @@ export default async function BoardsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {boards.length === 0 ? (
                     <div className="col-span-full text-center py-20 bg-slate-50 border border-dashed rounded-lg">
-                        <p className="text-slate-500 mb-4">Noch keine Boards vorhanden.</p>
+                        <p className="text-slate-500 mb-4">{de.boards.empty}</p>
                         <CreateBoardDialog />
                     </div>
                 ) : (
@@ -59,7 +60,7 @@ function BoardCard({ board }: { board: any }) {
                                         <Lock className="h-4 w-4 text-slate-400" />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Board structure locked by process template</p>
+                                        <p>{de.boards.lockedTooltip}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>

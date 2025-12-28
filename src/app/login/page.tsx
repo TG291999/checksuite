@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CheckSuiteLogo } from '@/components/brand/logo'
 
 export default async function LoginPage(props: { searchParams: Promise<{ error?: string }> }) {
     const searchParams = await props.searchParams
     const error = searchParams.error
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 gap-6">
+            <Link href="/">
+                <CheckSuiteLogo height={60} />
+            </Link>
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl">Anmelden</CardTitle>

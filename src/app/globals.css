@@ -61,7 +61,7 @@
   --popover-foreground: #0B0B0F;
   
   /* Primary - Purple accent */
-  --primary: #6D28D9;
+  --primary: #9146FF;
   --primary-foreground: #ffffff;
   
   /* Secondary - Gray tones */
@@ -74,7 +74,7 @@
   
   /* Accent - Subtle purple tint */
   --accent: #F5F3FF;
-  --accent-foreground: #6D28D9;
+  --accent-foreground: #9146FF;
   
   /* Destructive */
   --destructive: #ef4444;
@@ -84,10 +84,10 @@
   --input: #E5E7EB;
   
   /* Ring - Purple for focus */
-  --ring: #6D28D9;
+  --ring: #9146FF;
   
   /* Charts */
-  --chart-1: #6D28D9;
+  --chart-1: #9146FF;
   --chart-2: #8B5CF6;
   --chart-3: #A78BFA;
   --chart-4: #C4B5FD;
@@ -96,7 +96,7 @@
   /* Sidebar */
   --sidebar: #fafafa;
   --sidebar-foreground: #0B0B0F;
-  --sidebar-primary: #6D28D9;
+  --sidebar-primary: #9146FF;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #F5F3FF;
   --sidebar-accent-foreground: #6D28D9;

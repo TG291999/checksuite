@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import { Plus } from "lucide-react"
 import { createManualBoard } from "./actions"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { de } from "@/lib/i18n/de"
 
 export function CreateBoardDialog() {
     const [open, setOpen] = useState(false)
@@ -31,10 +32,10 @@ export function CreateBoardDialog() {
             const boardId = await createManualBoard(name)
             setOpen(false)
             setName("")
-            toast.success("Board erstellt")
+            toast.success(de.boards.createDialog.success)
             router.push(`/boards/${boardId}`)
         } catch (error) {
-            toast.error("Fehler beim Erstellen")
+            toast.error(de.common.error)
         } finally {
             setLoading(false)
         }
@@ -44,21 +45,21 @@ export function CreateBoardDialog() {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Board erstellen
+                    <Plus className="mr-2 h-4 w-4" /> {de.boards.createDialog.title}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
-                        <DialogTitle>Board erstellen</DialogTitle>
+                        <DialogTitle>{de.boards.createDialog.title}</DialogTitle>
                         <DialogDescription>
-                            Erstellen Sie ein neues manuelles Board ohne Prozessvorlage.
+                            {de.boards.createDialog.desc}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">
-                                Name
+                                {de.boards.createDialog.nameLabel}
                             </Label>
                             <Input
                                 id="name"
@@ -71,7 +72,7 @@ export function CreateBoardDialog() {
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>
-                            {loading ? 'Erstellt...' : 'Erstellen'}
+                            {loading ? de.common.loading : de.boards.createDialog.submit}
                         </Button>
                     </DialogFooter>
                 </form>

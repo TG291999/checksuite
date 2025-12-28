@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { CheckSuiteLogo } from '@/components/brand/logo'
 
 export default async function RegisterPage(props: { searchParams: Promise<{ error?: string; invite?: string }> }) {
     const searchParams = await props.searchParams
@@ -31,7 +32,10 @@ export default async function RegisterPage(props: { searchParams: Promise<{ erro
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 gap-6">
+            <Link href="/">
+                <CheckSuiteLogo height={60} />
+            </Link>
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl">Registrieren</CardTitle>

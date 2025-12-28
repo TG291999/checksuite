@@ -10,6 +10,7 @@ import { InviteDialog } from '@/components/settings/invite-dialog'
 import { ArrowLeft, Users, Shield } from 'lucide-react'
 import { RoleManager } from '@/components/team/role-manager'
 import { MemberRoleSelect } from '@/components/team/member-role-select'
+import { de } from '@/lib/i18n/de'
 
 export default async function TeamPage() {
     const supabase = await createClient()
@@ -45,12 +46,12 @@ export default async function TeamPage() {
                 <div className="bg-slate-100 p-4 rounded-full">
                     <Users className="h-8 w-8 text-slate-400" />
                 </div>
-                <h2 className="text-xl font-semibold text-slate-900">Zugriff verweigert</h2>
+                <h2 className="text-xl font-semibold text-slate-900">{de.team.accessDenied}</h2>
                 <p className="text-slate-500 max-w-md text-center">
-                    Sie benötigen Administrator-Rechte, um das Team zu verwalten.
+                    {de.team.accessDeniedDesc}
                 </p>
                 <Link href="/dashboard">
-                    <Button variant="outline">Zurück zum Dashboard</Button>
+                    <Button variant="outline">{de.common.back}</Button>
                 </Link>
             </div>
         )
@@ -88,7 +89,7 @@ export default async function TeamPage() {
         <div className="flex-1 space-y-8 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Team verwalten</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">{de.team.title}</h2>
                     <p className="text-muted-foreground">
                         {company.name} • {members?.length} Mitglieder
                     </p>
@@ -102,10 +103,10 @@ export default async function TeamPage() {
             <Card className="bg-slate-50 border-dashed">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-indigo-600" /> Funktionale Rollen
+                        <Shield className="h-4 w-4 text-[#9146FF]" /> {de.team.roles.title}
                     </CardTitle>
                     <CardDescription>
-                        Definieren Sie Zuständigkeiten (z.B. "Buchhaltung", "IT Support"), um Aufgaben automatisch zuzuweisen.
+                        {de.team.subtitle}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -115,7 +116,7 @@ export default async function TeamPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Mitglieder</CardTitle>
+                    <CardTitle>{de.team.members.title}</CardTitle>
                     <CardDescription>Verwalten Sie Zugriffsrechte und Mitglieder Ihrer Organisation.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -124,7 +125,7 @@ export default async function TeamPage() {
                             <div key={member.user_id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                                 <div className="flex items-center gap-4">
                                     <Avatar className="h-10 w-10">
-                                        <AvatarFallback className="bg-indigo-100 text-indigo-700 font-medium">
+                                        <AvatarFallback className="bg-indigo-100 text-[#9146FF] font-medium">
                                             {member.email?.[0]?.toUpperCase() || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
@@ -133,7 +134,7 @@ export default async function TeamPage() {
                                             {member.email}
                                         </p>
                                         <div className="flex items-center gap-2 text-xs text-slate-500">
-                                            <span>Beigetreten am {new Date(member.joined_at).toLocaleDateString()}</span>
+                                            <span>Beigetreten am {new Date(member.joined_at).toLocaleDateString('de-DE')}</span>
                                             {member.role === 'owner' && <span className="text-amber-600 font-semibold">• Eigentümer</span>}
                                         </div>
                                     </div>
