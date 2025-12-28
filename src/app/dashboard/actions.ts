@@ -334,12 +334,14 @@ export async function getDashboardData() {
     // Let's fetch "all active assigned to me" and sort/bucket in JS. 
     // This reduces DB queries to 1-2 and allows perfect JS timezone logic.
 
-    const { data: allMyTasks, error: taskError } = await supabase
+    const { data: rawTasks, error: taskError } = await supabase
         .from('cards')
         .select(`
             id, title, due_date, priority, position,
-            columns!inner (id, name, board_id), 
-            boards!inner (id, name, workspace_id)
+            columns!inner (
+                id, name, board_id,
+                boards!inner (id, name, workspace_id)
+            )
         `)
         .eq('assigned_to', user.id)
         .neq('columns.name', 'Done') // Filter out Done
@@ -349,6 +351,13 @@ export async function getDashboardData() {
         console.error('getDashboardData error:', taskError)
         return null
     }
+
+    // Flatten nested structure for UI compatibility
+    const allMyTasks = rawTasks?.map((t: any) => ({
+        ...t,
+        boards: t.columns.boards,
+        columns: { ...t.columns, boards: undefined }
+    }))
 
     // Role check for Admin View
     let isAdmin = false
