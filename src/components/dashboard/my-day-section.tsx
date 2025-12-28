@@ -14,7 +14,6 @@ export function MyDaySection({ title, icon: Icon, tasks, variant = 'default', em
     const hasTasks = tasks.length > 0
 
     return (
-        <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className={cn(
@@ -25,7 +24,7 @@ export function MyDaySection({ title, icon: Icon, tasks, variant = 'default', em
                     )}>
                         <Icon className="h-4 w-4" />
                     </div>
-                    <h3 className="font-semibold text-slate-800">{title}</h3>
+                    {title && <h3 className="font-semibold text-slate-800">{title}</h3>}
                 </div>
                 {hasTasks && (
                     <span className={cn(
@@ -50,6 +49,6 @@ export function MyDaySection({ title, icon: Icon, tasks, variant = 'default', em
                     ))
                 )}
             </div>
-        </div>
+        </div >
     )
 }
