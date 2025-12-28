@@ -47,7 +47,27 @@ export function DashboardCardItem({ task }: DashboardCardItemProps) {
         <div className={cn("group flex items-center justify-between rounded-lg border border-slate-100 bg-white p-3 shadow-sm transition-all hover:border-slate-300 hover:shadow-md", isUpdating && "opacity-50")}>
             <div className="flex flex-col gap-1 overflow-hidden">
                 <div className="flex items-center gap-2">
-                    <PriorityBadge priority={task.priority} />
+                    {/* Interactive Priority Badge */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
+                                <PriorityBadge priority={task.priority} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            <DropdownMenuLabel>Priorität ändern</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handlePriorityChange('high')}>
+                                Hoch
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePriorityChange('normal')}>
+                                Normal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePriorityChange('low')}>
+                                Niedrig
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <Link href={`/boards/${task.boards.id}/cards/${task.id}`} className="truncate font-medium text-slate-900 hover:underline">
                         {task.title}
                     </Link>

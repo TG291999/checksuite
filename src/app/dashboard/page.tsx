@@ -12,17 +12,54 @@ export const metadata = {
     description: 'Dein persönlicher Aufgaben-Überblick',
 }
 
-export default async function DashboardPage() {
-    const data = await getDashboardData()
+// Helper Component for Range Tabs
+function TimeRangeTabs({ currentRange }: { currentRange: string }) {
+    const ranges = [
+        { key: 'today', label: 'Heute' },
+        { key: 'week', label: 'Woche' },
+        { key: 'month', label: 'Monat' },
+    ]
+
+    return (
+        <div className="flex bg-slate-100 p-1 rounded-md">
+            {ranges.map(r => (
+                <Link
+                    key={r.key}
+                    href={`/dashboard?dueRange=${r.key}`}
+                    scroll={false}
+                    className={`
+                        px-3 py-1 text-xs font-medium rounded-sm transition-all
+                        ${currentRange === r.key
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}
+                    `}
+                >
+                    {r.label}
+                </Link>
+            ))}
+        </div>
+    )
+}
+
+export default async function DashboardPage(props: { searchParams: Promise<{ dueRange?: string }> }) {
+    const searchParams = await props.searchParams
+    const dueRange = (searchParams.dueRange as 'today' | 'week' | 'month') || 'today'
+    const data = await getDashboardData(dueRange)
 
     if (!data) {
         return <div className="p-8">Ladefehler. Bitte neu laden.</div>
     }
 
-    const { myOverdue, myToday, myNext, isAdmin, adminStats } = data
+    const { myOverdue, myDue, myNext, isAdmin, adminStats } = data
 
     // Calculate Workload for "My Workload" card
-    const totalOpen = myOverdue.length + myToday.length + myNext.length
+    const totalOpen = myOverdue.length + myDue.length + myNext.length
+
+    const rangeDescriptions = {
+        today: "Alles, was heute erledigt werden sollte.",
+        week: "Alles, was diese Woche fällig ist.",
+        month: "Alles, was diesen Monat fällig ist."
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-slate-50/50">
@@ -31,7 +68,7 @@ export default async function DashboardPage() {
                 <div>
                     <h1 className="text-xl font-bold text-slate-900">Mein Tag</h1>
                     <p className="text-sm text-slate-500">
-                        Willkommen zurück! Hier ist dein Überblick für heute.
+                        Willkommen zurück! Hier ist dein Überblick.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -57,21 +94,29 @@ export default async function DashboardPage() {
                         </div>
                     )}
 
-                    {/* Today Section */}
+                    {/* Due (Today/Week/Month) Section */}
                     <div className='animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100'>
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <h3 className="font-semibold text-slate-800">Fällig</h3>
+                                <p className="text-xs text-slate-500">{rangeDescriptions[dueRange]}</p>
+                            </div>
+                            <TimeRangeTabs currentRange={dueRange} />
+                        </div>
+
                         <MyDaySection
-                            title="Heute fällig"
+                            title="" // Hidden title since we have custom header above
                             icon={CheckCircle2}
-                            tasks={myToday}
+                            tasks={myDue}
                             variant="success"
-                            emptyText="Heute steht nichts an. Gute Arbeit!"
+                            emptyText={`Nichts fällig für ${dueRange === 'today' ? 'heute' : dueRange === 'week' ? 'diese Woche' : 'diesen Monat'}.`}
                         />
                     </div>
 
                     {/* Next Section */}
                     <div className='animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200'>
                         <MyDaySection
-                            title="Als Nächstes"
+                            title="Als Nächstes (Außerhalb Zeitraum / Ohne Datum)"
                             icon={Calendar}
                             tasks={myNext}
                             variant="default"
@@ -128,7 +173,7 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Quick Links (Re-adding lost functionality if any, essentially Recent Boards) */}
+                    {/* Quick Links */}
                     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Schnellzugriff</h3>
                         <div className="flex flex-col gap-2">

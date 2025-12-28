@@ -282,57 +282,30 @@ export async function createBoardFromTemplate(templateId: string, boardName: str
 
 // AP21-AP25: My Day Dashboard Actions
 
-export async function getDashboardData() {
+export async function getDashboardData(dueRange: 'today' | 'week' | 'month' = 'today') {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return null
 
-    // Helper to get start/end of today in UTC (since DB handles timestamps)
-    // We assume the user is in Europe/Berlin for MVP as requested, or just use current server time
-    // For simplicity and to avoid timezone hell without a library:
-    // We will do a rough comparison using ISO strings and Postgres functions if possible.
-    // Better: let Postgres handle "today".
-    // AND assigned_to = user.id AND status != 'Done' (we need to filter done columns)
-    // Problem: 'Done' status is defined by column name, not a flag on card.
-    // We need to join columns and filter by name != 'Done'.
+    // Helper: Europe/Berlin Timezone Logic
+    const berlinNow = new Date()
+    const formatter = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Berlin' }) // YYYY-MM-DD
+    const todayString = formatter.format(berlinNow)
 
-    // Parallel fetch
-    const pOverdue = supabase
-        .from('cards')
-        .select('*, columns!inner(board_id, name), boards!inner(workspace_id, name)')
-        .eq('assigned_to', user.id)
-        .lt('due_date', new Date().toISOString())
-        .neq('columns.name', 'Done') // Assumption: Done column is named 'Done'
-        .order('priority', { ascending: false }) // High > Normal > Low (if enum ordered, else text)
-    // Note: 'high' < 'low' alphabetically. We might need custom sort in JS if enum isn't ordered "correctly" logic-wise.
-    // If enum: high, normal, low. 
-    // We will sort in JS to be safe.
+    // Calculate End Dates
+    let endDateString = todayString // Default Today
 
-    // Today: due_date >= today_start AND due_date <= today_end
-    // We can use postgres date_trunc('day', due_date) = current_date? 
-    // Let's use JS dates for range to be safe with timezone "Europe/Berlin"
-    const now = new Date()
-    const formatter = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' })
-    const parts = formatter.formatToParts(now)
-    const day = parts.find(p => p.type === 'day')?.value
-    const month = parts.find(p => p.type === 'month')?.value
-    const year = parts.find(p => p.type === 'year')?.value
-    const todayString = `${year}-${month}-${day}` // YYYY-MM-DD in Berlin
-
-    // Postgres: due_date::date = todayString
-    // But due_date is timestamptz.
-    // Simplest: Fetch all assigned active tasks and filter in JS? 
-    // Might be heavy if many tasks.
-    // Let's try range query.
-    // Start of today Berlin: 00:00:00 -> UTC
-    // End of today Berlin: 23:59:59 -> UTC
-    // Use simple ISO string match for "Today" match is tricky with timezone.
-    // Let's rely on PostgREST filter `gte` and `lt`.
-
-    // For MVP "Heute" in generic UTC is often acceptable, but requirement said "Europe/Berlin".
-    // Let's fetch "all active assigned to me" and sort/bucket in JS. 
-    // This reduces DB queries to 1-2 and allows perfect JS timezone logic.
+    if (dueRange === 'week') {
+        const dayOfWeek = berlinNow.getDay() || 7 // 1 (Mon) - 7 (Sun)
+        const daysUntilSunday = 7 - dayOfWeek
+        const endOfWeek = new Date(berlinNow)
+        endOfWeek.setDate(berlinNow.getDate() + daysUntilSunday)
+        endDateString = formatter.format(endOfWeek)
+    } else if (dueRange === 'month') {
+        const endOfMonth = new Date(berlinNow.getFullYear(), berlinNow.getMonth() + 1, 0)
+        endDateString = formatter.format(endOfMonth)
+    }
 
     const { data: rawTasks, error: taskError } = await supabase
         .from('cards')
@@ -344,7 +317,7 @@ export async function getDashboardData() {
             )
         `)
         .eq('assigned_to', user.id)
-        .neq('columns.name', 'Done') // Filter out Done
+        .neq('columns.name', 'Done')
         .order('due_date', { ascending: true, nullsFirst: false })
 
     if (taskError) {
@@ -352,14 +325,49 @@ export async function getDashboardData() {
         return null
     }
 
-    // Flatten nested structure for UI compatibility
+    // Flatten
     const allMyTasks = rawTasks?.map((t: any) => ({
         ...t,
         boards: t.columns.boards,
         columns: { ...t.columns, boards: undefined }
     }))
 
-    // Role check for Admin View
+    // Bucket Tasks
+    const overdue: any[] = []
+    const dueRangeTasks: any[] = [] // "Fällig"
+    const next: any[] = []
+
+    allMyTasks?.forEach((task: any) => {
+        if (!task.due_date) {
+            next.push(task)
+            return
+        }
+
+        const taskDate = new Date(task.due_date).toLocaleDateString('fr-CA', { timeZone: 'Europe/Berlin' })
+
+        if (taskDate < todayString) {
+            overdue.push(task)
+        } else if (taskDate >= todayString && taskDate <= endDateString) {
+            dueRangeTasks.push(task)
+        } else {
+            next.push(task)
+        }
+    })
+
+    // Sort Logic
+    const priorityWeight = { high: 3, normal: 2, low: 1, null: 0 } as any
+    const sorter = (a: any, b: any) => {
+        const pA = priorityWeight[a.priority || 'normal']
+        const pB = priorityWeight[b.priority || 'normal']
+        if (pA !== pB) return pB - pA
+        return new Date(a.due_date || '9999').getTime() - new Date(b.due_date || '9999').getTime()
+    }
+
+    overdue.sort(sorter)
+    dueRangeTasks.sort(sorter)
+    next.sort(sorter)
+
+    // Admin Stats
     let isAdmin = false
     const { data: member } = await supabase
         .from('workspace_members')
@@ -372,72 +380,14 @@ export async function getDashboardData() {
         isAdmin = true
     }
 
-    // Process Tasks
-    const overdue: any[] = []
-    const today: any[] = []
-    const next: any[] = []
-
-    const berlinNow = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' }) // YYYY-MM-DD
-
-    allMyTasks?.forEach(task => {
-        if (!task.due_date) {
-            next.push(task)
-            return
-        }
-
-        const dueDateStart = new Date(task.due_date).toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' })
-
-        if (dueDateStart < berlinNow) {
-            overdue.push(task)
-        } else if (dueDateStart === berlinNow) {
-            today.push(task)
-        } else {
-            next.push(task)
-        }
-    })
-
-    // Custom Sort (Priority: high > normal > low, then Due Date)
-    const priorityWeight = { high: 3, normal: 2, low: 1, null: 0 } as any
-    const sorter = (a: any, b: any) => {
-        const pA = priorityWeight[a.priority || 'normal']
-        const pB = priorityWeight[b.priority || 'normal']
-        if (pA !== pB) return pB - pA
-        // then specific logic per list (e.g. overdue: oldest first)
-        return new Date(a.due_date || '9999').getTime() - new Date(b.due_date || '9999').getTime()
-    }
-
-    overdue.sort(sorter)
-    today.sort(sorter)
-    next.sort(sorter)
-
-    // Limit Next
-    const limitedNext = next.slice(0, 20)
-
-    // Admin Stats
     let adminStats = null
     if (isAdmin) {
-        // Fetch company wide stats
-        // 1. Overdue total (exclude done)
-        const { count: overdueCount } = await supabase
-            .from('cards')
-            .select('id', { count: 'exact', head: true })
-            .lt('due_date', new Date().toISOString())
-            .neq('columns.name', 'Done') // This fails? inner join needed on columns?
-        // Actually, we can't filter by joined column name easily in count header query without deeper setup.
-        // Let's do a simple query.
-        // Workaround: We assume columns named 'Done' are status done.
-        // Better: use the 'cards' table view if we had one.
-        // Let's ignore the 'Done' filter for the COUNT aggregate for speed or do a join.
-        // supabase-js supports filtering on foreign tables.
-        // .select('*, columns!inner(*)') .neq('columns.name', 'Done')
-
         const { data: overdueData } = await supabase
             .from('cards')
             .select('columns!inner(name)')
             .lt('due_date', new Date().toISOString())
             .neq('columns.name', 'Done')
 
-        // 2. Unassigned
         const { data: unassignedData } = await supabase
             .from('cards')
             .select('columns!inner(name)')
@@ -452,8 +402,8 @@ export async function getDashboardData() {
 
     return {
         myOverdue: overdue,
-        myToday: today,
-        myNext: limitedNext,
+        myDue: dueRangeTasks,
+        myNext: next.slice(0, 20),
         adminStats,
         isAdmin
     }
