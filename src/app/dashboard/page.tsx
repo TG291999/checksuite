@@ -97,6 +97,12 @@ export default async function DashboardPage() {
                         <BarChart className="h-4 w-4" />
                         <span className="hidden sm:inline">Analytics</span>
                     </Link>
+                    {isAdminOrOwner && (
+                        <Link href="/dashboard/team" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            <span className="hidden sm:inline">Team</span>
+                        </Link>
+                    )}
                     <span className="text-sm text-slate-500 hidden sm:inline-block">{user.email}</span>
                     <form action={async () => {
                         'use server'
@@ -165,49 +171,7 @@ export default async function DashboardPage() {
 
                         {/* Recent Boards Column (1/3 width) */}
                         <div className="space-y-6">
-                            {/* Management Actions (Only for Owner/Admin) */}
-                            {isAdminOrOwner && (
-                                <div className="space-y-4">
-                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                                        <Users className="h-4 w-4" />
-                                        Verwaltung
-                                    </h2>
-                                    <Link href="/dashboard/team">
-                                        <Card className="hover:shadow-md transition-all duration-200 cursor-pointer bg-white border-slate-200 group-hover:border-primary/50">
-                                            <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
-                                                <div>
-                                                    <CardTitle className="text-base text-indigo-700">
-                                                        Team & Rollen
-                                                    </CardTitle>
-                                                    <CardDescription className="text-xs mt-1">
-                                                        Mitglieder einladen, Rollen verwalten
-                                                    </CardDescription>
-                                                </div>
-                                                <div className="bg-indigo-50 p-2 rounded-full">
-                                                    <Users className="h-4 w-4 text-indigo-600" />
-                                                </div>
-                                            </CardHeader>
-                                        </Card>
-                                    </Link>
-                                    <Link href="/dashboard/management">
-                                        <Card className="hover:shadow-md transition-all duration-200 cursor-pointer bg-white border-slate-200 group-hover:border-primary/50">
-                                            <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
-                                                <div>
-                                                    <CardTitle className="text-base text-indigo-700">
-                                                        Management
-                                                    </CardTitle>
-                                                    <CardDescription className="text-xs mt-1">
-                                                        KPIs, Auslastung & Engpässe
-                                                    </CardDescription>
-                                                </div>
-                                                <div className="bg-indigo-50 p-2 rounded-full">
-                                                    <BarChart className="h-4 w-4 text-indigo-600" />
-                                                </div>
-                                            </CardHeader>
-                                        </Card>
-                                    </Link>
-                                </div>
-                            )}
+
 
                             <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                                 <Layout className="h-4 w-4" />
