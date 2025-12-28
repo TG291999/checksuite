@@ -23,7 +23,7 @@ export function SidebarNav() {
         <div className="flex h-full w-64 flex-col border-r bg-white">
             <div className="flex h-16 items-center border-b px-6">
                 <Link href="/dashboard" className="flex items-center gap-2">
-                    <CheckSuiteLogo height={32} />
+                    <CheckSuiteLogo height={42} />
                 </Link>
             </div>
 
