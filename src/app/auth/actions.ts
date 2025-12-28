@@ -42,6 +42,7 @@ export async function signup(formData: FormData) {
     }
 
     const companyName = (formData.get('companyName') as string)?.trim()
+    const inviteToken = (formData.get('inviteToken') as string)?.trim()
 
     // Basic email format validation (optional, Supabase does it too)
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -63,20 +64,52 @@ export async function signup(formData: FormData) {
 
     let redirectTo = '/dashboard'
 
-    // If signup was successful and we have a user, seed data
+    // If signup was successful and we have a user
     if (data.user) {
-        // Warning: If email confirmation is ON, data.session might be null,
-        // and RLS might fail if it relies on auth.uid().
-        if (!data.session) {
-            console.warn('User created but NO SESSION. Email confirmation might be required.')
-            // We cannot seed if we are not logged in (unless we bypass RLS, which we shouldn't dynamically)
-            // But we can try relying on the fact that we have the user ID. 
-            // However, strictly RLS policies check auth.uid().
-        }
+        // If coming from an Invite, accept it!
+        if (inviteToken) {
+            // Re-use logic from acceptInvite but we are in a server action and just signed up
+            // We can call a helper function or duplicate logic.
+            // Since we established `acceptInvite` in `src/app/invite/actions.ts`, let's import it if possible?
+            // `acceptInvite` expects to read cookies for user, which fits.
+            // BUT: `acceptInvite` does redirects. We want to control redirect.
+            // Better: Duplicating the critical Invite Logic here for safety & transaction-like flow.
 
-        const boardId = await seedNewUser(supabase, data.user.id, companyName)
-        if (boardId) {
-            redirectTo = `/boards/${boardId}`
+            const adminSupabase = await import('@/lib/supabase/admin').then(mod => mod.createAdminClient())
+
+            // 1. Verify Invite
+            const { data: invite } = await adminSupabase
+                .from('workspace_invites')
+                .select('*')
+                .eq('token', inviteToken)
+                .single()
+
+            if (invite && new Date(invite.expires_at) > new Date()) {
+                // 2. Add Member
+                await adminSupabase.from('workspace_members').insert({
+                    workspace_id: invite.workspace_id,
+                    user_id: data.user.id,
+                    role: invite.role
+                })
+
+                // 3. Cleanup
+                await adminSupabase.from('workspace_invites').delete().eq('id', invite.id)
+
+                // No Seeding needed, joining existing company
+                // Redirect will be Dashboard
+            } else {
+                console.warn('Signup with invalid/expired invite token:', inviteToken)
+                // Fallback: Seed new user? Or just error?
+                // If invite failed, user has account but no workspace.
+                // Safest: Seed new workspace so they are not broken.
+                await seedNewUser(supabase, data.user.id, companyName)
+            }
+        } else {
+            // Normal Signup -> Seed
+            const boardId = await seedNewUser(supabase, data.user.id, companyName)
+            if (boardId) {
+                redirectTo = `/boards/${boardId}`
+            }
         }
     }
 
